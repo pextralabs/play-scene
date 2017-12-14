@@ -48,7 +48,7 @@ public class EntityController extends Controller {
 
         Entity entity = new Entity(entityNode.findPath("type").textValue(), entityNode.findPath("name").textValue());
 
-        return entityRepo.save(entity).thenApplyAsync(
+        return entityRepo.saveAsync(entity).thenApplyAsync(
                 ent -> {
                     sceneActor.tell(new Protocols.Operation(ent, Protocols.Operation.Type.INSERT), null );
                     return ok(Json.toJson(ent));
@@ -74,7 +74,7 @@ public class EntityController extends Controller {
                                     return JsonResults.badRequest("missing default value");
 
                                 Sensor sensor = new Sensor((Entity) entity, sensorNode.findPath("label").textValue(), sensorNode.findPath("initValue").doubleValue() );
-                                sensor.save();
+                                entityRepo.save(sensor);
                                 sceneActor.tell(new Protocols.Operation(sensor, INSERT), null );
                                 return ok(Json.toJson(sensor));
                             }
@@ -95,9 +95,9 @@ public class EntityController extends Controller {
                         if (!sensorNode.has("value"))
                             return JsonResults.badRequest("missing value");
 
-                        sensor.setValue(
+                        entityRepo.save(sensor.setValue(
                                 sensorNode.findPath("value").doubleValue()
-                        ).save();
+                        ));
 
                         sceneActor.tell(new Protocols.Operation(sensor, UPDATE), null );
                         return ok(Json.toJson(sensor));

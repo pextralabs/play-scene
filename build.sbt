@@ -9,11 +9,15 @@ resolvers += "SCENE Repo" at "https://mymavenrepo.com/repo/BG5Za6vz3CyY7SaQjMOa/
 
 testOptions += Tests.Argument(TestFrameworks.JUnit, "-a", "-v")
 
-lazy val root = (project in file(".")).enablePlugins(PlayJava, PlayEbean)
+lazy val root = (project in file(".")).enablePlugins(PlayJava)
 
 libraryDependencies ++= Seq(
   ws,
   guice,
+  evolutions,
+  jdbc,
+  javaJpa,
+  "org.hibernate" % "hibernate-core" % "5.2.5.Final",
   "com.h2database" % "h2" % "1.4.192",
   "org.drools" % "drools-core" % "7.4.1.Final",
   "org.drools" % "drools-compiler" % "7.4.1.Final",

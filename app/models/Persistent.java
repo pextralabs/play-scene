@@ -2,7 +2,6 @@ package models;
 
 import com.fasterxml.jackson.annotation.JsonIdentityInfo;
 import com.fasterxml.jackson.annotation.ObjectIdGenerators;
-import io.ebean.Model;
 import play.libs.Json;
 
 import javax.persistence.GeneratedValue;
@@ -14,7 +13,7 @@ import javax.persistence.MappedSuperclass;
         generator = ObjectIdGenerators.PropertyGenerator.class,
         property = "id")
 @MappedSuperclass
-public class Persistent extends Model {
+public class Persistent {
     @Id
     @GeneratedValue(strategy= GenerationType.IDENTITY)
     public Long id;
