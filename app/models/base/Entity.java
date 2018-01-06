@@ -1,6 +1,6 @@
-package models;
+package models.base;
 
-import play.libs.Json;
+import models.Persistent;
 
 import javax.persistence.CascadeType;
 import javax.persistence.OneToMany;

@@ -7,6 +7,9 @@ GET     /                                   controllers.HomeController.index()
 
 GET     /subscribe                          controllers.HomeController.subscribe()
 
+
+# ENTITIES
+
 #GET     /entities                   controllers.EntityController.getEntities()
 
 POST    /entities                           controllers.EntityController.addEntity()
@@ -14,6 +17,29 @@ POST    /entities                           controllers.EntityController.addEnti
 POST    /entities/:entityId                 controllers.EntityController.addSensor(entityId: Long)
 
 POST    /entities/:entityId/sensors/:sensorId/update  controllers.EntityController.updateSensor(entityId: Long, sensorId: Long)
+
+
+# SENSORING
+
+GET     /sensors                    controllers.SensorController.getSensors()
++ nocsrf
+POST    /sensors                    controllers.SensorController.createSensor()
+GET     /sensors/:sensorId          controllers.SensorController.getSensor(sensorId: Long)
++ nocsrf
+POST    /sensors/:sensorId          controllers.SensorController.updateSensor(sensorId: Long)
++ nocsrf
+DELETE  /sensors/:sensorId          controllers.SensorController.deleteSensor(sensorId: Long)
++ nocsrf
+POST    /sensors/:sensorId/streams              controllers.SensorController.createStream(sensorId: Long)
+GET     /sensors/:sensorId/streams/:streamId    controllers.SensorController.getStream(sensorId: Long, streamId: Long)
++ nocsrf
+POST    /sensors/:sensorId/streams/:streamId    controllers.SensorController.updateStream(sensorId: Long, streamId: Long)
++ nocsrf
+DELETE  /sensors/:sensorId/streams/:streamId    controllers.SensorController.deleteStream(sensorId: Long, streamId: Long)
++ nocsrf
+PUT    /sensors/:sensorKey/streams/:streamKey/data  controllers.SensorController.putData(sensorKey: String, streamKey: String)
+
+GET    /sensors/:sensorId/streams/:streamId/data  controllers.SensorController.getStreamData(sensorId: Long, streamId: Long, start: Option[String], end: Option[String], length: Option[String])
 
 
 

@@ -4,8 +4,8 @@ import actors.Protocols;
 import akka.actor.ActorRef;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.inject.name.Named;
-import models.Entity;
-import models.Sensor;
+import models.base.Entity;
+import models.base.Sensor;
 import play.libs.Json;
 import play.libs.concurrent.HttpExecutionContext;
 import play.mvc.BodyParser;
@@ -48,64 +48,60 @@ public class EntityController extends Controller {
 
         Entity entity = new Entity(entityNode.findPath("type").textValue(), entityNode.findPath("name").textValue());
 
-        return entityRepo.saveAsync(entity).thenApplyAsync(
-                ent -> {
-                    sceneActor.tell(new Protocols.Operation(ent, Protocols.Operation.Type.INSERT), null );
-                    return ok(Json.toJson(ent));
-                },
-                httpExecutionContext.current()
+        return entityRepo.withinAsyncTransaction(
+           em -> {
+               entityRepo.save(em, entity);
+               sceneActor.tell(new Protocols.Operation(entity, Protocols.Operation.Type.INSERT), null );
+               return ok(Json.toJson(entity));
+           }
         );
-
     }
 
     @BodyParser.Of(BodyParser.Json.class)
     public CompletionStage<Result> addSensor(Long entityId) {
 
-        return entityRepo.getById(Entity.class, entityId).thenApplyAsync(
-            maybeEntity ->
-                    maybeEntity.map(
-                            entity -> {
-                                JsonNode sensorNode = request().body().asJson();
+        return entityRepo.withinAsyncTransaction(
+            em -> entityRepo.getById(em, Entity.class, entityId).map(
+                entity -> {
+                    JsonNode sensorNode = request().body().asJson();
 
-                                if (!sensorNode.has("label"))
-                                    return JsonResults.badRequest("missing label");
+                    if (!sensorNode.has("label"))
+                        return JsonResults.badRequest("missing label");
 
-                                if (!sensorNode.has("initValue"))
-                                    return JsonResults.badRequest("missing default value");
+                    if (!sensorNode.has("initValue"))
+                        return JsonResults.badRequest("missing default value");
 
-                                Sensor sensor = new Sensor((Entity) entity, sensorNode.findPath("label").textValue(), sensorNode.findPath("initValue").doubleValue() );
-                                entityRepo.save(sensor);
-                                sceneActor.tell(new Protocols.Operation(sensor, INSERT), null );
-                                return ok(Json.toJson(sensor));
-                            }
-                    ).orElse(
-                            JsonResults.notFound("entity not found")
-                    ),
-            httpExecutionContext.current()
+                    Sensor sensor = new Sensor((Entity) entity, sensorNode.findPath("label").textValue(), sensorNode.findPath("initValue").doubleValue() );
+                    entityRepo.save(em, sensor);
+                    sceneActor.tell(new Protocols.Operation(sensor, INSERT), null );
+                    return ok(Json.toJson(sensor));
+                    }
+            ).orElse(
+                    JsonResults.notFound("entity not found")
+            )
         );
+
     }
 
     public CompletionStage<Result> updateSensor(Long entityId, Long sensorId) {
 
-        return entityRepo.getSensorByEntity(entityId, sensorId).thenApplyAsync(
-            maybeEntity ->
-                maybeEntity.map(
-                    sensor -> {
-                        JsonNode sensorNode = request().body().asJson();
-                        if (!sensorNode.has("value"))
-                            return JsonResults.badRequest("missing value");
+        return entityRepo.withinAsyncTransaction(
+                em -> entityRepo.getSensorByEntity(em, entityId, sensorId).map(
+                        sensor -> {
+                            JsonNode sensorNode = request().body().asJson();
+                            if (!sensorNode.has("value"))
+                                return JsonResults.badRequest("missing value");
 
-                        entityRepo.save(sensor.setValue(
-                                sensorNode.findPath("value").doubleValue()
-                        ));
+                            entityRepo.save(em, sensor.setValue(
+                                    sensorNode.findPath("value").doubleValue()
+                            ));
 
-                        sceneActor.tell(new Protocols.Operation(sensor, UPDATE), null );
-                        return ok(Json.toJson(sensor));
-                    }
+                            sceneActor.tell(new Protocols.Operation(sensor, UPDATE), null );
+                            return ok(Json.toJson(sensor));
+                        }
                 ).orElse(
                         JsonResults.notFound("sensor not found")
-                ),
-            httpExecutionContext.current()
+                )
         );
 
     }

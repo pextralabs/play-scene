@@ -5,10 +5,13 @@ import akka.actor.ActorRef;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
 import br.ufes.inf.lprm.scene.SceneApplication;
+import models.base.Entity;
+import models.sensing.Sensor;
 import org.kie.api.conf.EqualityBehaviorOption;
 import org.kie.api.runtime.rule.FactHandle;
 import play.api.Environment;
 import repos.EntityRepo;
+import repos.SensorRepo;
 import scala.Option;
 import scene.SituationBroadcaster;
 import javassist.ClassPool;
@@ -31,6 +34,7 @@ import org.kie.api.runtime.KieSession;
 import org.kie.api.runtime.conf.ClockTypeOption;
 import org.springframework.cglib.proxy.Enhancer;
 import play.Logger;
+import utils.JsonViews;
 
 import javax.inject.Inject;
 import java.io.File;
@@ -51,10 +55,10 @@ public class SceneActor extends AbstractActor {
     private final Set<ActorRef> subscribers;
     private final Environment env;
     private final EntityRepo entityRepo;
+    private final SensorRepo sensorRepo;
 
     private KieSession kSession;
     private CompletableFuture engine;
-
 
     private KieSession newSession(Environment env, String sceneId) {
         // Getting KieServices
@@ -147,13 +151,25 @@ public class SceneActor extends AbstractActor {
 
         new SceneApplication(classPool, kSession, "scene-actor");
 
-        entityRepo.getEntities().thenAccept(
-            entities -> {
-                self().tell(new Protocols.Operation(entities, INSERT), self() );
-                entities.forEach(
+        sensorRepo.withinAsyncTransaction(
+                em -> {
+                    List<Entity> entities = entityRepo.getEntities(em);
+                    self().tell(new Protocols.Operation(entities, INSERT), self() );
+                    entities.forEach(
+                            entity -> self().tell(new Protocols.Operation(entity.getSensors(), INSERT), self() )
+                    );
+                    return entities;
+                }
+        );
 
-                        entity -> self().tell(new Protocols.Operation(entity.getSensors(), INSERT), self() )
+        sensorRepo.withinAsyncTransaction(
+            em -> {
+                List<Sensor> sensors = sensorRepo.getSensors(em);
+                self().tell(new Protocols.Operation(sensors, INSERT), self() );
+                sensors.forEach(
+                        sensor -> self().tell(new Protocols.Operation(sensor.getStreams(), INSERT), self() )
                 );
+                return sensors;
             }
         );
 
@@ -176,8 +192,9 @@ public class SceneActor extends AbstractActor {
     }
 
     @Inject
-    public SceneActor(Environment env, EntityRepo entityRepo) {
+    public SceneActor(Environment env, EntityRepo entityRepo, SensorRepo sensorRepo) {
         this.env = env;
+        this.sensorRepo = sensorRepo;
         this.entityRepo = entityRepo;
 
         this.subscribers = new HashSet<>();
@@ -209,11 +226,11 @@ public class SceneActor extends AbstractActor {
                                 FactHandle handle = session.getFactHandle(item);
                                 if (handle == null) {
                                     logger.info("fact handle for `{}` not found... inserting it", item);
-                                    logger.info("inserting object... {}", item);
+                                    logger.info("inserting object... {}", JsonViews.toJson(item, JsonViews.Default.class ));
                                     session.insert(item);
                                     logger.info("object inserted...");
                                 } else {
-                                    logger.info("updating object... {}", item);
+                                    logger.info("updating object... {}",  JsonViews.toJson(item, JsonViews.Default.class ));
                                     session.update(handle, item);
                                     logger.info("object updated...");
                                 }

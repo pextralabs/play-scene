@@ -1,8 +1,12 @@
-package models;
+package models.base;
+
+import models.Persistent;
 
 import javax.persistence.ManyToOne;
+import javax.persistence.Table;
 
 @javax.persistence.Entity
+@Table(name="entity_sensor")
 public class Sensor extends Persistent {
 
     @ManyToOne(optional=false)

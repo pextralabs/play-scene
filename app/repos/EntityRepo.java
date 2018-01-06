@@ -1,11 +1,12 @@
 package repos;
 
 import db.DatabaseExecutionContext;
-import models.Entity;
-import models.Sensor;
+import models.base.Entity;
+import models.base.Sensor;
 import play.db.jpa.JPAApi;
 
 import javax.inject.Inject;
+import javax.persistence.EntityManager;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletionStage;
@@ -19,21 +20,17 @@ public class EntityRepo extends BaseRepo {
         super(jpaApi, executionContext);
     }
 
-    public CompletionStage<List<Entity>> getEntities() {
-        return supplyAsync(() -> withTransaction(
-            (em) -> em.createQuery("select e from Entity e", Entity.class).getResultList()
-        ), executionContext);
+    public List<Entity> getEntities(EntityManager em) {
+        return em.createQuery("select e from Entity e", Entity.class).getResultList();
     }
 
-    public CompletionStage<Optional<Sensor>> getSensorByEntity(Long entityId, Long sensorId) {
-        return supplyAsync(() -> withTransaction(
-                (em) -> Optional.ofNullable(
-                        em.createQuery("select s from Sensor s where s.id=:sensorId and s.bearer=:entityId", Sensor.class)
+    public Optional<Sensor> getSensorByEntity(EntityManager em, Long entityId, Long sensorId) {
+        return getUniqueOrEmpty(
+                em.createQuery("select s from models.base.Sensor s where s.id=:sensorId and s.bearer=:entityId", models.base.Sensor.class)
                         .setParameter("sensorId", sensorId)
                         .setParameter("entityId", entityId)
-                        .getSingleResult()
-                )
-        ), executionContext);
+        );
+
     }
 
 

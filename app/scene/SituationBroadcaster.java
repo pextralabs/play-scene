@@ -8,7 +8,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import models.Entity;
+import models.base.Entity;
 import models.Persistent;
 import org.kie.api.event.rule.DefaultRuleRuntimeEventListener;
 import org.kie.api.event.rule.ObjectInsertedEvent;

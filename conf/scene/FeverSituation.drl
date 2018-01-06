@@ -1,7 +1,6 @@
 package scene;
 
-import models.Sensor;
-import models.Entity;
+import models.base.*;
 
 import br.ufes.inf.lprm.scene.model.Situation;
 import br.ufes.inf.lprm.situation.bindings.*;
